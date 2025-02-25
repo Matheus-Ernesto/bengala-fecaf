@@ -12,7 +12,7 @@ Um projeto de faculdade. Este projeto é um projeto com Arduino + Servidor que i
 (Explicação)
 
 #### Para quem?
-(Explicação)
+Deficientes visuais
 
 #### Como?
 (Explicação)
