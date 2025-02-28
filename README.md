@@ -1,6 +1,6 @@
 PT-BR
 # bengala-fecaf
-Um projeto de faculdade. Este projeto é um projeto com Arduino + Servidor que identifica objetos pertos de colidir, usando ESP32 e YOLOV5
+Projeto com Arduino + Servidor que identifica objetos pertos de colidir, usando ESP32 e YOLOV5
 
 (fotos do projeto)
 
