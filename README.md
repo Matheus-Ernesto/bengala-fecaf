@@ -70,7 +70,7 @@ Para baixar o modelo `yolov5s.pt`, utilize o comando:
 <pre><code>python -c "from yolov5 import YOLOv5; model = YOLOv5('yolov5s.pt')"</code></pre>
 
 **IMPORTANTE**
-Verifique se a GPU está disponível e pode ser usada com CUDA.
+*Verifique se a GPU está disponível e pode ser usada com CUDA.
 ```
 import torch
 print(torch.cuda.is_available()) # Deve retornar True se houver uma GPU disponível
