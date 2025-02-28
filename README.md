@@ -8,11 +8,13 @@ Projeto com Arduino + Servidor que identifica objetos pertos de colidir, usando 
 
 ## Motivação
 
+Pessoas com deficiência visual enfrentam desafios diários para se locomover com segurança. Apesar das bengalas e cães-guia, obstáculos inesperados ainda representam riscos. Seu projeto visa oferecer uma solução acessível e eficiente para detecção de objetos próximos, alertando os usuários antes de uma possível colisão.
+
 #### Por quê?
 Surge da necessidade de aumentar a autonomia, segurança e acesibilidade para pessoas com deficiência visual. Promove inclusão social, reduzindo riscos e facilitando a locomoção.
 
 #### Para quem?
-Deficientes visuais
+Deficientes visuais, Este sistema é projetado para pessoas cegas ou com baixa visão, auxiliando na mobilidade segura em ambientes internos e externos.
 
 #### Como?
 (Explicação)
@@ -20,6 +22,17 @@ Deficientes visuais
 ---------
 
 ## Funcionamento
+
+1. ESP32-CAM captura imagens a cada 17ms e as envia para um servidor Flask via Wi-Fi.
+
+2. Servidor processa as imagens usando YOLOv5, detectando objetos e sua proximidade.
+
+3. Retorno da informação pode ser feito de várias formas:
+
+ - Um aviso sonoro (bip com diferentes intensidades conforme a proximidade do obstáculo).
+ - Vibração no dispositivo para indicar a distância e a posição do objeto.
+ - Integração com um aplicativo que emite alertas por áudio.
+
 
 #### Hardware
 (Explicação)
@@ -70,7 +83,7 @@ Para baixar o modelo `yolov5s.pt`, utilize o comando:
 <pre><code>python -c "from yolov5 import YOLOv5; model = YOLOv5('yolov5s.pt')"</code></pre>
 
 **IMPORTANTE**
-* Verifique se a GPU está disponível e pode ser usada com CUDA.
+Verifique se a GPU está disponível e pode ser usada com CUDA.
 ```
 import torch
 print(torch.cuda.is_available()) # Deve retornar True se houver uma GPU disponível
