@@ -33,19 +33,19 @@ Configura o ESP32-CAM (AI-Thinker) para capturar imagens e enviá-las para o ser
 * Conecta-se ao Wi-Fi usando o SSID e password.
 * Inicializa a câmera, ajustando brilho, contraste e qualidade da imagem.
 * Captura imagens a cada 17ms e envia para o servidor Flask:
-    1.  O ESP tira uma foto usando a câmera.
-    2.  Converte a imagem para o formato JPEG.
-    3.  Envia a imagem via HTTP POST para `http://192.168.10.5/processar`.
-    4.  Exibe no Serial Monitor a resposta do servidor.
+    1. O ESP tira uma foto usando a câmera.
+    2. Converte a imagem para o formato JPEG.
+    3. Envia a imagem via HTTP POST para `http://192.168.10.5/processar`.
+    4. Exibe no Serial Monitor a resposta do servidor.
 
 #### Servidor
 Recebe imagens enviadas pelo ESP32-CAM.
 * Utiliza a biblioteca `torch` para carregar o modelo YOLOv5.
 * Servidor: `http://192.168.10.5/processar`.
-    1.  Converte a imagem recebida para um formato que o modelo possa usar.
-    2.  Processa a imagem com o YOLOv5 para detectar objetos.
-    3.  Exibe os resultados no terminal.
-    4.  Salva a imagem processada com as detecções no diretório `fotos/`.
+    1. Converte a imagem recebida para um formato que o modelo possa usar.
+    2. Processa a imagem com o YOLOv5 para detectar objetos.
+    3. Exibe os resultados no terminal.
+    4. Salva a imagem processada com as detecções no diretório `fotos/`.
 
 #### YOLOv5
 Realiza a detecção de objetos nas fotos enviadas.
@@ -57,9 +57,9 @@ Realiza a detecção de objetos nas fotos enviadas.
 ---
 
 ## Como instalar o YOLOv5
-1.  Instalar Python 3.10 ou superior.
-2.  Criar um ambiente virtual (opcional).
-3.  Instalar o YOLOv5:
+1. Instalar Python 3.10 ou superior.
+2. Criar um ambiente virtual (opcional).
+3. Instalar o YOLOv5:
     * `git clone https://github.com/ultralytics/yolov5`
     * `pip install -r requirements.txt`
 
