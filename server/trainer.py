@@ -1,0 +1,14 @@
+from ultralytics import YOLO
+
+model = YOLO("yolo11x.pt")
+
+train_results = model.train(
+    data="coco8.yaml",
+    epochs=100,
+    imgsz=640,
+    device="cpu",
+)
+metrics = model.val()
+
+# results = model("path/test.jpeg")
+# results[0].show()

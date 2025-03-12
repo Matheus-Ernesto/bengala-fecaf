@@ -6,9 +6,9 @@
 #include "camera_pins.h"
 
 // Configurações de rede
-const char* ssid = "CASA-2.4G"; // Coloque seu SSID
-const char* password = "25122003"; // Coloque sua senha
-const char* serverUrl = "http://192.168.10.3/api/retrievePhotos.php"; // URL do servidor Flask
+const char* ssid = "ESP32LAN"; // Coloque seu SSID
+const char* password = "abcdefgh"; // Coloque sua senh
+const char* serverUrl = "http:/192.168.56.1/api/sendPhotos.php"; // URL do servidor Flask
 
 void setup() {
   Serial.begin(115200);
@@ -36,7 +36,7 @@ void setup() {
   config.pin_reset = RESET_GPIO_NUM;
   config.xclk_freq_hz = 20000000;
   config.pixel_format = PIXFORMAT_JPEG;
-  config.frame_size = FRAMESIZE_SVGA;  // Reduz para 800x600 (menor tamanho de arquivo)
+  config.frame_size = FRAMESIZE_SVGA;  // Reduz para 640x480 (menor tamanho de arquivo)
   config.jpeg_quality = 12; // Aumenta a compressão, reduzindo qualidade e tamanho do arquivo
   config.fb_count = 1;
 
@@ -54,6 +54,7 @@ void setup() {
       s->set_contrast(s, 2);    // Contraste (-2 a 2, padrão 0)
       s->set_saturation(s, 2);  // Saturação (-2 a 2, padrão 0)
   }
+
 
   esp_err_t err = esp_camera_init(&config);
   if (err != ESP_OK) {
@@ -100,6 +101,5 @@ void sendImageToServer() {
 
 void loop() {
   sendImageToServer(); // Envia a imagem ao servidor Flask
-  delay(100); // Ajuste o intervalo conforme necessário
+  delay(500); // Ajuste o intervalo conforme necessário
 }
-

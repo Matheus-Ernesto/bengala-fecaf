@@ -104,3 +104,14 @@ Path comum:BASE_DIR = 'C:/Users/<seu usuário>/<pasta do projeto>/fotos/'
 Pasta do modelo a ser utilizado (esse por exemplo é o yolov5-master, baixado o zip do github).
 Local: app.py -> model = torch.hub.load('C:/Users/note/Documents/ProjetosRepo/bengala-fecaf/yolov5', 'custom', path='yolov5s.pt', source='local')
 Path comum:model = torch.hub.load('C:/Users/<seu usuário>/pasta do projeto<>/server/yolov5', 'custom', path='yolov5s.pt', source='local')
+
+Como simplemente colocar para funcionar?
+
+Se quiser rodar rapidamente, basta abrir o cmd nesta pasta e executar o comando:
+py ./server.py
+Algumas instalações do python tem variações, então pode ser py, py3 e as vezes python.
+
+Isso já inicializará o servidor, ai é só fazer o esp32 conectar a rede wifi e mandar as imagens ao seu ip.
+Não sabe seu IP? Tudo bem, basta abrir o cmd, e usar tal comando:
+ipconfig
+O IP que você deve substituir no código do arduino é o ipv4, tem mais instrucoes no codigo do arduino.
