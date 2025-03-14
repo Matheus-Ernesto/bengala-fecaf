@@ -20,7 +20,7 @@ import datetime
 app = FastAPI()
 
 # Carregar o modelo uma vez na memória
-model = YOLO("yolo11x.pt")
+model = YOLO("yolov5nu.pt")
 
 # Definir pasta de upload
 UPLOAD_FOLDER = Path("photos")
@@ -39,4 +39,4 @@ async def process_image(file: UploadFile = File(...)):
     # todo
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8080)

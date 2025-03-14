@@ -7,8 +7,8 @@
 
 // Configurações de rede
 const char* ssid = "ESP32LAN"; // Coloque seu SSID
-const char* password = "abcdefgh"; // Coloque sua senh
-const char* serverUrl = "http:/192.168.56.1/api/sendPhotos.php"; // URL do servidor Flask
+const char* password = "********"; // Coloque sua senh
+const char* serverUrl = "http:/192.168.999.999/api/sendPhotos.php"; // URL do servidor Flask
 
 void setup() {
   Serial.begin(115200);
@@ -96,10 +96,10 @@ void sendImageToServer() {
     Serial.println("Wi-Fi não conectado");
   }
 
-  esp_camera_fb_return(fb);
+  esp_camera_fb_return(fb);                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
 }
 
 void loop() {
   sendImageToServer(); // Envia a imagem ao servidor Flask
-  delay(500); // Ajuste o intervalo conforme necessário
+  delay(100); // Ajuste o intervalo conforme necessário
 }
