@@ -20,7 +20,7 @@ import datetime
 app = FastAPI()
 
 # Carregar o modelo uma vez na memória
-model = YOLO("best.pt")
+model = YOLO("yolov5nu.pt")
 
 # Definir pasta de upload
 UPLOAD_FOLDER = Path("photos")
