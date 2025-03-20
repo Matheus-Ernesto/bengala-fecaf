@@ -7,8 +7,8 @@
 
 const char* ssid = "CASA-2.4G"; // Coloque seu SSID
 const char* password = "25122003"; // Coloque sua senh
-const char* serverUrl = "http://192.168.10.3:8000/process-image/"; // Endereço do FastAPI
-
+//const char* serverUrl = "http://192.168.10.3:8000/process-image/"; // Endereço do FastAPI
+const char* serverUrl = "192.168.10.3"; // Endereço do FastAPI
 void setup() {
   Serial.begin(115200);
   Serial.setDebugOutput(true);
@@ -35,12 +35,11 @@ void setup() {
   config.pin_reset = RESET_GPIO_NUM;
   config.xclk_freq_hz = 20000000;
   config.pixel_format = PIXFORMAT_JPEG;
-  config.frame_size = FRAMESIZE_SVGA;  // Reduz para 640x480 (menor tamanho de arquivo)
+  config.frame_size = FRAMESIZE_128X128;  // Reduz para 640x480 (menor tamanho de arquivo)
   config.jpeg_quality = 12; // Aumenta a compressão, reduzindo qualidade e tamanho do arquivo
   config.fb_count = 1;
 
   if (config.pixel_format == PIXFORMAT_JPEG && psramFound()) {
-    config.jpeg_quality = 10;
     config.fb_count = 2;
   } else {
     config.frame_size = FRAMESIZE_VGA;  // Reduz para 640x480 (menor tamanho de arquivo)
@@ -77,21 +76,26 @@ void sendImageToServer() {
   }
 
   if (WiFi.status() == WL_CONNECTED) {
-    HTTPClient http;
-    http.begin(serverUrl);
-    http.addHeader("Content-Type", "image/jpeg");
+    WiFiClient client;
+    if (client.connect(serverUrl, 8000)) {  // Altere para HTTPS se necessário
+      Serial.println("Enviando foto...");
+      
+      // Monta a requisição HTTP manualmente
+      client.print("POST /process-image/ HTTP/1.1\r\n");
+      client.print("Host: " + String(serverUrl) + "\r\n");
+      client.print("Content-Type: image/jpeg\r\n");
+      client.print("Content-Length: " + String(fb->len) + "\r\n");
+      client.print("Connection: close\r\n\r\n");
 
-    int httpResponseCode = http.POST(fb->buf, fb->len);
-    Serial.println("foto enviada");
-    if (httpResponseCode > 0) {
-      String response = http.getString();
-      Serial.println("Resposta do servidor:");
-      Serial.println(response);
+      // Envia os dados da imagem
+      client.write(fb->buf, fb->len);
+
+      // Fecha a conexão imediatamente (sem esperar resposta)
+      client.stop();
+      Serial.println("Foto enviada!");
     } else {
-      Serial.print("Erro na requisição: ");
-      Serial.println(httpResponseCode);
+      Serial.println("Falha ao conectar ao servidor");
     }
-    http.end();
   } else {
     Serial.println("Wi-Fi não conectado");
   }
