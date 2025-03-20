@@ -5,26 +5,31 @@ import os
 image_folder = "runs"
 
 def get_latest_image(folder):
-    # Obtenha todas as subpastas (data_hora) dentro de 'runs'
-    subfolders = [os.path.join(folder, subfolder) for subfolder in os.listdir(folder) if os.path.isdir(os.path.join(folder, subfolder))]
+    # Lista todas as subpastas que seguem o padrão "DD-MM-YYYY_HH-MM-SS-FFF"
+    subfolders = [os.path.join(folder, sub) for sub in os.listdir(folder) if os.path.isdir(os.path.join(folder, sub))]
 
     if not subfolders:
         return None
 
-    # Encontrar o arquivo mais recente dentro de cada subpasta
-    latest_image = None
-    latest_time = 0
+    # Ordenar as subpastas pelo timestamp no nome (mais recente primeiro)
+    subfolders.sort(key=lambda x: os.path.getmtime(x), reverse=True)
 
     for subfolder in subfolders:
-        # Pega todos os arquivos de imagem dentro da subpasta
-        files = [os.path.join(subfolder, f) for f in os.listdir(subfolder) if f.endswith(('.png', '.jpg', '.jpeg'))]
-        for file in files:
-            file_time = os.path.getmtime(file)  # Tempo de modificação do arquivo
-            if file_time > latest_time:  # Se a imagem for mais recente que a anterior
-                latest_time = file_time
-                latest_image = file
+        # Caminho para a pasta "output" dentro da subpasta
+        output_folder = os.path.join(subfolder, "output")
+        
+        if not os.path.exists(output_folder):
+            continue  # Se a pasta "output" não existir, pula essa pasta
 
-    return latest_image
+        # Nome esperado do arquivo .jpg dentro da pasta "output"
+        folder_name = os.path.basename(subfolder)
+        expected_image_path = os.path.join(output_folder, f"{folder_name}.jpg")
+
+        # Se o arquivo existe, retorna ele
+        if os.path.exists(expected_image_path):
+            return expected_image_path
+
+    return None
 
 def display_latest_image():
     cv2.namedWindow("Stream de Imagens", cv2.WINDOW_NORMAL)
