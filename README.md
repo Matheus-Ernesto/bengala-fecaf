@@ -80,9 +80,9 @@ Realiza a detecção de objetos nas fotos enviadas.
 
 ## Melhorias a serem implementadas no semestre 1/2025
 
-1. Melhoria na IA (YOLO): Estamos atualizando do yolo5 para o YOLOv5nu, usando uma versão mais potente no servidor e mais precisa.
-2. Melhoria no delay: Estamos melhorando o delay do sistema inteiro, para que consiga processar mais imagens e manter uma boa integradade nos sensores.
-3. Design: Estamos melhorando o design para que os sensores consigam fazer leituras mais corretas e precisas.
+1. Melhoria na IA (YOLO): Estamos atualizando do yolo5 para o YOLOv5nu, usando uma versão mais potente no servidor e mais precisa. ✅ - Conseguimos implementar o yolov5nu, já o treinando também.
+2. Melhoria no delay: Estamos melhorando o delay do sistema inteiro, para que consiga processar mais imagens e manter uma boa integradade nos sensores. ✅ - Conseguimos agilizar todo o sistema (excluindo o processamento do yolo) para +30 fps com 128x128-79%.
+3. Design: Estamos melhorando o design para que os sensores consigam fazer leituras mais corretas e precisas. ✅ - Conseguimos modificar o design para melhor leituras, em forma de escada.
 4. Conexões físicas: estamos melhorando as conexões do projeto para que tenha menos problemas físicos com conexões e cabeamentos.
 
 ## Próximas melhorias

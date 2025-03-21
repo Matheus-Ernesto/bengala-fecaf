@@ -9,6 +9,3 @@ train_results = model.train(
     device="cpu",
 )
 metrics = model.val()
-
-# results = model("path/test.jpeg")
-# results[0].show()

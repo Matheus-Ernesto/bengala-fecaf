@@ -2,13 +2,13 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 
-#define CAMERA_MODEL_AI_THINKER  // Altere para o modelo correto, se necessário
+#define CAMERA_MODEL_AI_THINKER
 #include "camera_pins.h"
 
-const char* ssid = "CASA-2.4G"; // Coloque seu SSID
-const char* password = "25122003"; // Coloque sua senh
-//const char* serverUrl = "http://192.168.10.3:8000/process-image/"; // Endereço do FastAPI
-const char* serverUrl = "192.168.10.3"; // Endereço do FastAPI
+const char* ssid = "ESP32LAN";
+const char* password = "abcdefgh";
+//const char* serverUrl = "http://192.168.10.3:8000/process-image/";
+const char* serverUrl = "192.168.132.154";
 void setup() {
   Serial.begin(115200);
   Serial.setDebugOutput(true);
@@ -35,8 +35,8 @@ void setup() {
   config.pin_reset = RESET_GPIO_NUM;
   config.xclk_freq_hz = 20000000;
   config.pixel_format = PIXFORMAT_JPEG;
-  config.frame_size = FRAMESIZE_128X128;  // Reduz para 640x480 (menor tamanho de arquivo)
-  config.jpeg_quality = 12; // Aumenta a compressão, reduzindo qualidade e tamanho do arquivo
+  config.frame_size = FRAMESIZE_128X128;
+  config.jpeg_quality = 12;
   config.fb_count = 1;
 
   if (config.pixel_format == PIXFORMAT_JPEG && psramFound()) {
@@ -48,9 +48,9 @@ void setup() {
 
   sensor_t *s = esp_camera_sensor_get();
   if (s) {
-      s->set_brightness(s, 1);  // Brilho (-2 a 2, padrão 0)
-      s->set_contrast(s, 2);    // Contraste (-2 a 2, padrão 0)
-      s->set_saturation(s, 2);  // Saturação (-2 a 2, padrão 0)
+      s->set_brightness(s, 1);
+      s->set_contrast(s, 2);
+      s->set_saturation(s, 2);
   }
 
 
@@ -77,20 +77,17 @@ void sendImageToServer() {
 
   if (WiFi.status() == WL_CONNECTED) {
     WiFiClient client;
-    if (client.connect(serverUrl, 8000)) {  // Altere para HTTPS se necessário
+    if (client.connect(serverUrl, 8000)) {
       Serial.println("Enviando foto...");
       
-      // Monta a requisição HTTP manualmente
       client.print("POST /process-image/ HTTP/1.1\r\n");
       client.print("Host: " + String(serverUrl) + "\r\n");
       client.print("Content-Type: image/jpeg\r\n");
       client.print("Content-Length: " + String(fb->len) + "\r\n");
       client.print("Connection: close\r\n\r\n");
 
-      // Envia os dados da imagem
       client.write(fb->buf, fb->len);
 
-      // Fecha a conexão imediatamente (sem esperar resposta)
       client.stop();
       Serial.println("Foto enviada!");
     } else {
@@ -104,7 +101,6 @@ void sendImageToServer() {
 }
 
 void loop() {
-  sendImageToServer(); // Envia a imagem ao servidor Flask
-  delay(17); // Ajuste o intervalo conforme necessário
-
+  sendImageToServer();
+  //delay(400);
 }
