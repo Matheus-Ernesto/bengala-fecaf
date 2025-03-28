@@ -5,10 +5,10 @@
 #define CAMERA_MODEL_AI_THINKER
 #include "camera_pins.h"
 
-const char* ssid = "ESP32LAN";
-const char* password = "abcdefgh";
+const char* ssid = "CASA-2.4G";
+const char* password = "25122003";
 //const char* serverUrl = "http://192.168.10.3:8000/process-image/";
-const char* serverUrl = "192.168.132.154";
+const char* serverUrl = "192.168.10.3";
 void setup() {
   Serial.begin(115200);
   Serial.setDebugOutput(true);
@@ -35,7 +35,7 @@ void setup() {
   config.pin_reset = RESET_GPIO_NUM;
   config.xclk_freq_hz = 20000000;
   config.pixel_format = PIXFORMAT_JPEG;
-  config.frame_size = FRAMESIZE_128X128;
+  config.frame_size = FRAMESIZE_VGA;
   config.jpeg_quality = 12;
   config.fb_count = 1;
 
