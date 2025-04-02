@@ -1,14 +1,21 @@
 #include "esp_camera.h"
 #include <WiFi.h>
 #include <HTTPClient.h>
+#include <ArduinoJson.h>
 
 #define CAMERA_MODEL_AI_THINKER
 #include "camera_pins.h"
 
+// Configurações de rede
+//CONFIG HERE
 const char* ssid = "CASA-2.4G";
 const char* password = "25122003";
-//const char* serverUrl = "http://192.168.10.3:8000/process-image/";
-const char* serverUrl = "192.168.10.3";
+const char* ipv4 = "192.168.10.4";
+const int delay = 500;
+//CONFIG HERE END
+
+const char* serverUrl = "http://"+ipv4+":8000/process-image/";
+
 void setup() {
   Serial.begin(115200);
   Serial.setDebugOutput(true);
@@ -35,22 +42,24 @@ void setup() {
   config.pin_reset = RESET_GPIO_NUM;
   config.xclk_freq_hz = 20000000;
   config.pixel_format = PIXFORMAT_JPEG;
-  config.frame_size = FRAMESIZE_VGA;
-  config.jpeg_quality = 12;
+  config.frame_size = FRAMESIZE_UXGA;
+  config.jpeg_quality = 8;
   config.fb_count = 1;
 
   if (config.pixel_format == PIXFORMAT_JPEG && psramFound()) {
+    config.jpeg_quality = 10;
     config.fb_count = 2;
   } else {
-    config.frame_size = FRAMESIZE_VGA;  // Reduz para 640x480 (menor tamanho de arquivo)
+    config.frame_size = FRAMESIZE_VGA;
     config.fb_location = CAMERA_FB_IN_DRAM;
   }
 
   sensor_t *s = esp_camera_sensor_get();
   if (s) {
-      s->set_brightness(s, 1);
-      s->set_contrast(s, 2);
-      s->set_saturation(s, 2);
+      s->set_brightness(s, -2);  // Brilho (-2 a 2, padrão 0)
+      s->set_contrast(s, -2);    // Contraste (-2 a 2, padrão 0)
+      s->set_saturation(s, -2);  // Saturação (-2 a 2, padrão 0)
+      s->set_special_effect(s, 2);
   }
 
 
@@ -76,23 +85,43 @@ void sendImageToServer() {
   }
 
   if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
     WiFiClient client;
-    if (client.connect(serverUrl, 8000)) {
-      Serial.println("Enviando foto...");
-      
-      client.print("POST /process-image/ HTTP/1.1\r\n");
-      client.print("Host: " + String(serverUrl) + "\r\n");
-      client.print("Content-Type: image/jpeg\r\n");
-      client.print("Content-Length: " + String(fb->len) + "\r\n");
-      client.print("Connection: close\r\n\r\n");
 
-      client.write(fb->buf, fb->len);
+    http.begin(client, serverUrl);
+    http.addHeader("Host", "192.168.10.4:8000");
+    http.addHeader("Content-Type", "image/jpeg");
 
-      client.stop();
-      Serial.println("Foto enviada!");
+    int httpResponseCode = http.POST(fb->buf, fb->len);
+    Serial.print("Código de resposta HTTP: ");
+    Serial.println(httpResponseCode);
+
+    if (httpResponseCode > 0) {
+        String response = http.getString();
+        Serial.println("Resposta do servidor:");
+        Serial.println(response);
+
+        // Criar buffer JSON
+        StaticJsonDocument<200> doc;
+        DeserializationError error = deserializeJson(doc, response);
+
+        if (!error) {
+            float max_val = doc["max_val"];
+            int maxInt = static_cast<int>(max_val);
+            
+            Serial.print("Valor extraído: ");
+            Serial.println(maxInt);
+            if(maxInt >= 200) {
+              //Vibrar motor
+            }
+        } else {
+            Serial.println("Erro ao interpretar JSON");
+        }
     } else {
-      Serial.println("Falha ao conectar ao servidor");
+        Serial.println("Erro na requisição");
     }
+
+    http.end();
   } else {
     Serial.println("Wi-Fi não conectado");
   }
@@ -102,5 +131,5 @@ void sendImageToServer() {
 
 void loop() {
   sendImageToServer();
-  //delay(400);
+  delay(delay);
 }

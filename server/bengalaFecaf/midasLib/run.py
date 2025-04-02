@@ -284,7 +284,7 @@ if __name__ == "__main__":
 def preload(model_path, model_type, optimize, height, square):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("Device: %s" % device)
-    return load_model(model_path, model_type, optimize, height, square)
+    return load_model(device, model_path, model_type, optimize, height, square)
 
 def run_with_model(model, transform, net_w, net_h,input_path, output_path, model_type="dpt_beit_large_512", optimize=False, side=False, grayscale=False):
     """Run MonoDepthNN to compute depth maps.
