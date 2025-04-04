@@ -1,9 +1,21 @@
 import sys
+import os
 
 sys.path.append("midasLib")
 sys.path.append("bengalaFecaf/midasLib")
 
 import run
+from contextlib import contextmanager
+
+@contextmanager
+def ocultar_prints():
+    stdout_original = sys.stdout
+    sys.stdout = open(os.devnull, 'w')
+    try:
+        yield
+    finally:
+        sys.stdout.close()
+        sys.stdout = stdout_original
 
 class Midas:
     def __init__(self):
@@ -15,14 +27,16 @@ class Midas:
         self.net_h = None
     
     def carregar(self):
-        self._model, self.transform, self.net_w, self.net_h, = run.preload(
-            "bengalaFecaf/weights/"+self.modelo,
-            self.tipo_modelo,
-            False,
-            None,
-            False)
+        with ocultar_prints():
+            self._model, self.transform, self.net_w, self.net_h, = run.preload(
+                "bengalaFecaf/weights/"+self.modelo,
+                self.tipo_modelo,
+                False,
+                None,
+                False)
         return None
     
     def avaliar(self, imagem):
-        run.run_with_model(self._model, self.transform, self.net_w, self.net_h, imagem, "images/runs_midas", model_type=self.tipo_modelo, optimize=False, side=False, grayscale=True)
+        with ocultar_prints():
+            run.run_with_model(self._model, self.transform, self.net_w, self.net_h, imagem, "images/runs_midas", model_type=self.tipo_modelo, optimize=False, side=False, grayscale=True)
         return None

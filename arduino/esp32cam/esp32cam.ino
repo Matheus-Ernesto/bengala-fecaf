@@ -11,10 +11,10 @@
 const char* ssid = "CASA-2.4G";
 const char* password = "25122003";
 const char* ipv4 = "192.168.10.4";
-const int delay = 500;
+const int timeDelay = 500;
 //CONFIG HERE END
 
-const char* serverUrl = "http://"+ipv4+":8000/process-image/";
+String serverUrl = "http://" + String(ipv4) + ":8000/process-image/";
 
 void setup() {
   Serial.begin(115200);
@@ -131,5 +131,5 @@ void sendImageToServer() {
 
 void loop() {
   sendImageToServer();
-  delay(delay);
+  delay(timeDelay);
 }

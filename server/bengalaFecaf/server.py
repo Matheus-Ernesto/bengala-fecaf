@@ -10,11 +10,11 @@ from PIL import Image
 import time
 import cv2
 
-
 class Server:
     def __init__(self):
         self.yolo = None
         self.midas = None
+        self.verbose = True
         self.last_request_time = time.time()
     
     def iniciar(self):
@@ -30,7 +30,7 @@ class Server:
                 elapsed_time_ms = (current_time - self.last_request_time) * 1000
                 fps = 1000 / elapsed_time_ms if elapsed_time_ms > 0 else 0
                 
-                print(f"Tempo entre requisições: {elapsed_time_ms:.2f} ms | FPS: {fps:.2f}")
+                print(f"##### Tempo entre requisições: {elapsed_time_ms:.2f} ms | FPS: {fps:.2f} #####")
                 
                 self.last_request_time = current_time
             
@@ -38,7 +38,7 @@ class Server:
                 IMAGE_PATH_MIDAS = "images/photos/"
                 IMAGE_PATH_YOLO = "images/photos/output.jpg"
 
-                print("imagem salva em: " + IMAGE_PATH)
+                if self.verbose: print("imagem salva em: " + IMAGE_PATH)
                 os.makedirs(os.path.dirname(IMAGE_PATH), exist_ok=True)
                 img_bytes = await request.body()
                 img = Image.open(io.BytesIO(img_bytes))
@@ -61,8 +61,8 @@ class Server:
                         
                         min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(cropped_image)
                         
-                        print(f"O pixel mais branco tem valor: {max_val} (escala de 0 a 255)")
-                        print(f"Localização do pixel mais branco: {max_loc}")
+                        if self.verbose: print(f"O pixel mais branco tem valor: {max_val} (escala de 0 a 255)")
+                        if self.verbose: print(f"Localização do pixel mais branco: {max_loc}")
                         return {
                             "max_val": max_val,
                         }
@@ -74,5 +74,5 @@ class Server:
             except Exception as e:
                 return {"status": "error", "message": str(e)}
             
-        uvicorn.run(app, host="0.0.0.0", port=8000)
+        uvicorn.run(app, host="0.0.0.0", port=8000, log_level="warning")
         return 0

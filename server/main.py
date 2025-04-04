@@ -8,5 +8,6 @@ midas = Midas()
 server = Server()
 server.yolo = yolo
 server.midas = midas
+server.verbose = False
 
 server.iniciar()
