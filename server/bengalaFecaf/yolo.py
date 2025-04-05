@@ -45,6 +45,7 @@ class Yolo:
         )
 
         metrics = self._model.val()
+
         return None
     
     def carregar(self):

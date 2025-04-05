@@ -8,9 +8,9 @@
 
 // Configurações de rede
 //CONFIG HERE
-const char* ssid = "CASA-2.4G";
-const char* password = "25122003";
-const char* ipv4 = "192.168.10.4";
+const char* ssid = "ESP32LAN";
+const char* password = "abcdefgh";
+const char* ipv4 = "192.168.212.154";
 const int timeDelay = 500;
 //CONFIG HERE END
 
@@ -42,8 +42,8 @@ void setup() {
   config.pin_reset = RESET_GPIO_NUM;
   config.xclk_freq_hz = 20000000;
   config.pixel_format = PIXFORMAT_JPEG;
-  config.frame_size = FRAMESIZE_UXGA;
-  config.jpeg_quality = 8;
+  config.frame_size = FRAMESIZE_VGA;
+  config.jpeg_quality = 12;
   config.fb_count = 1;
 
   if (config.pixel_format == PIXFORMAT_JPEG && psramFound()) {
@@ -89,10 +89,10 @@ void sendImageToServer() {
     WiFiClient client;
 
     http.begin(client, serverUrl);
-    http.addHeader("Host", "192.168.10.4:8000");
     http.addHeader("Content-Type", "image/jpeg");
 
     int httpResponseCode = http.POST(fb->buf, fb->len);
+    esp_camera_fb_return(fb);
     Serial.print("Código de resposta HTTP: ");
     Serial.println(httpResponseCode);
 
@@ -120,13 +120,11 @@ void sendImageToServer() {
     } else {
         Serial.println("Erro na requisição");
     }
-
+    
     http.end();
   } else {
     Serial.println("Wi-Fi não conectado");
   }
-
-  esp_camera_fb_return(fb);
 }
 
 void loop() {
