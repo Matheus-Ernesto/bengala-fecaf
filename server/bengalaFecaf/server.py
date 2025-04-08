@@ -1,9 +1,8 @@
 import sys
-import os
 import time
-import io
-import base64
-from PIL import Image
+import asyncio
+import websockets
+import os
 import cv2
 import asyncio
 import websockets
@@ -29,55 +28,57 @@ class Server:
             print("Novo cliente conectado")
             try:
                 async for message in websocket:
-                    # current_time = time.time()
-                    # elapsed_time_ms = (current_time - self._last_request_time) * 1000
-                    # fps = 1000 / elapsed_time_ms if elapsed_time_ms > 0 else 0
-                    # self._last_request_time = current_time
+                    print("Imagem recebida! Salvando...")
 
-                    # print(f"##### Tempo entre requisições: {elapsed_time_ms:.2f} ms | FPS: {fps:.2f} #####")
+                    output_dir = "images/photos"
+                    os.makedirs(output_dir, exist_ok=True)
+                    with open(os.path.join(output_dir, "output.jpg"), "wb") as f:
+                        f.write(message)
 
-                    # # Processa a imagem
-                    # IMAGE_PATH = "images/photos/output.jpg"
-                    # IMAGE_PATH_MIDAS = "images/photos/"
-                    # IMAGE_PATH_YOLO = "images/photos/output.jpg"
+                    current_time = time.time()
+                    elapsed_time_ms = (current_time - self._last_request_time) * 1000
+                    fps = 1000 / elapsed_time_ms if elapsed_time_ms > 0 else 0
+                    self._last_request_time = current_time
 
-                    # os.makedirs(os.path.dirname(IMAGE_PATH), exist_ok=True)
+                    print(f"##### Tempo entre requisições: {elapsed_time_ms:.2f} ms | FPS: {fps:.2f} #####")
 
-                    # image_bytes = base64.b64decode(data)
-                    # image = Image.open(io.BytesIO(image_bytes))
-                    # image.save(IMAGE_PATH)
+                    # Processa a imagem
+                    IMAGE_PATH = "images/photos/output.jpg"
+                    IMAGE_PATH_MIDAS = "images/photos/"
+                    IMAGE_PATH_YOLO = "images/photos/output.jpg"
 
-                    # if self.verbose:
-                    #     print("Imagem salva em:", IMAGE_PATH)
 
-                    # if self.yolo:
-                    #     self.yolo.avaliar(IMAGE_PATH_YOLO)
+                    if self.verbose:
+                        print("Imagem salva em:", IMAGE_PATH)
 
-                    # if self.midas:
-                    #     self.midas.avaliar(IMAGE_PATH_MIDAS)
+                    if self.yolo:
+                        self.yolo.avaliar(IMAGE_PATH_YOLO)
 
-                    # image_path = f"images/runs_midas/output-{self.midas.tipo_modelo}.png"
-                    # image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+                    if self.midas:
+                        self.midas.avaliar(IMAGE_PATH_MIDAS)
 
-                    # if image is None:
-                    #     print("Erro ao carregar a imagem.")
-                    #     # await websocket.send("false")
-                    # else:
-                    #     height, width = image.shape
-                    #     crop_x = int(width * 0.2)
-                    #     crop_y = int(height * 0.2)
-                    #     cropped_image = image[crop_y:height - crop_y, crop_x:width - crop_x]
+                    image_path = f"images/runs_midas/output-{self.midas.tipo_modelo}.png"
+                    image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
 
-                    #     min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(cropped_image)
+                    if image is None:
+                        print("Erro ao carregar a imagem.")
+                        # await websocket.send("false")
+                    else:
+                        height, width = image.shape
+                        crop_x = int(width * 0.2)
+                        crop_y = int(height * 0.2)
+                        cropped_image = image[crop_y:height - crop_y, crop_x:width - crop_x]
 
-                    #     if self.verbose:
-                    #         print(f"O pixel mais branco tem valor: {max_val} (escala de 0 a 255)")
-                    #         print(f"Localização do pixel mais branco: {max_loc}")
+                        min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(cropped_image)
 
-                    #     ativar_motor = max_val >= 200
-                    #     await websocket.send("true" if ativar_motor else "false")
+                        if self.verbose:
+                            print(f"O pixel mais branco tem valor: {max_val} (escala de 0 a 255)")
+                            print(f"Localização do pixel mais branco: {max_loc}")
 
-                    await websocket.send(f"Echo: {message}")
+                        ativar_motor = max_val >= 200
+                        await websocket.send("true" if ativar_motor else "false")
+
+                    await websocket.send("Imagem recebida e salva com sucesso!")
             except websockets.exceptions.ConnectionClosed as e:
                 print(f"Cliente desconectado: {e}")
             finally:

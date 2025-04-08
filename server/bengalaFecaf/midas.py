@@ -39,7 +39,7 @@ class Midas:
                 "bengalaFecaf/weights/"+self.modelo,
                 self.tipo_modelo,
                 False,
-                64,
+                None,
                 False)
         return None
     

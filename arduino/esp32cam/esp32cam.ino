@@ -1,107 +1,99 @@
 #include "esp_camera.h"
 #include <WiFi.h>
 #include <ArduinoWebsockets.h>
-#include "base64.h"  // esta vem com a IDE Arduino
 
 using namespace websockets;
 
-#define CAMERA_MODEL_AI_THINKER
-#include "camera_pins.h"
-
+// Configurações de rede
 const char* ssid = "CASA-2.4G";
 const char* password = "25122003";
-const char* ws_server = "ws://192.168.10.4:8765";  // IP do seu PC com Python rodando
+const char* websockets_server_host = "192.168.10.4";
+const uint16_t websockets_server_port = 8765;
 
 WebsocketsClient client;
 
-void setupWiFi() {
-  WiFi.begin(ssid, password);
-  Serial.print("Conectando ao WiFi");
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-  Serial.println("\nWiFi conectado!");
-}
+void setup() {
+  Serial.begin(115200);
+  Serial.setDebugOutput(true);
+  Serial.println();
 
-void setupCamera() {
-   camera_config_t config;
+  // Configuração da câmera
+  camera_config_t config;
   config.ledc_channel = LEDC_CHANNEL_0;
   config.ledc_timer = LEDC_TIMER_0;
-  config.pin_d0 = Y2_GPIO_NUM;
-  config.pin_d1 = Y3_GPIO_NUM;
-  config.pin_d2 = Y4_GPIO_NUM;
-  config.pin_d3 = Y5_GPIO_NUM;
-  config.pin_d4 = Y6_GPIO_NUM;
-  config.pin_d5 = Y7_GPIO_NUM;
-  config.pin_d6 = Y8_GPIO_NUM;
-  config.pin_d7 = Y9_GPIO_NUM;
-  config.pin_xclk = XCLK_GPIO_NUM;
-  config.pin_pclk = PCLK_GPIO_NUM;
-  config.pin_vsync = VSYNC_GPIO_NUM;
-  config.pin_href = HREF_GPIO_NUM;
-  config.pin_sccb_sda = SIOD_GPIO_NUM;
-  config.pin_sccb_scl = SIOC_GPIO_NUM;
-  config.pin_pwdn = PWDN_GPIO_NUM;
-  config.pin_reset = RESET_GPIO_NUM;
+  config.pin_d0 = 5;
+  config.pin_d1 = 18;
+  config.pin_d2 = 19;
+  config.pin_d3 = 21;
+  config.pin_d4 = 36;
+  config.pin_d5 = 39;
+  config.pin_d6 = 34;
+  config.pin_d7 = 35;
+  config.pin_xclk = 0;
+  config.pin_pclk = 22;
+  config.pin_vsync = 25;
+  config.pin_href = 23;
+  config.pin_sccb_sda = 26;
+  config.pin_sccb_scl = 27;
+  config.pin_pwdn = 32;
+  config.pin_reset = -1;
   config.xclk_freq_hz = 20000000;
   config.pixel_format = PIXFORMAT_JPEG;
   config.frame_size = FRAMESIZE_VGA;
   config.jpeg_quality = 12;
   config.fb_count = 1;
-  config.fb_location = CAMERA_FB_IN_PSRAM;
 
-  esp_err_t err = esp_camera_init(&config);
-  if (err != ESP_OK) {
-    Serial.printf("Erro ao inicializar câmera: 0x%x", err);
-    while (true) delay(100);
+  // Inicialização do sensor e ajustes de imagem
+  sensor_t *s = esp_camera_sensor_get();
+  if (s) {
+    s->set_brightness(s, 1);   // Brilho (-2 a 2)
+    s->set_contrast(s, 2);     // Contraste (-2 a 2)
+    s->set_saturation(s, 2);   // Saturação (-2 a 2)
   }
+
+  // Inicializar câmera
+  if (esp_camera_init(&config) != ESP_OK) {
+    Serial.println("Falha na inicialização da câmera");
+    return;
+  }
+
+  // Conectar ao Wi-Fi
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\nWiFi conectado");
+
+  // Conectar ao servidor WebSocket
+  if (client.connect(websockets_server_host, websockets_server_port, "/")) {
+    Serial.println("Conectado ao servidor WebSocket");
+  } else {
+    Serial.println("Falha na conexão WebSocket");
+  }
+
+  // Callback para mensagens recebidas
+  client.onMessage([](WebsocketsMessage message) {
+    Serial.print("Ativar motor: ");
+    Serial.println(message.data());
+  });
 }
 
-void mandarFoto() {
-  camera_fb_t * fb = esp_camera_fb_get();
+void sendImageToServer() {
+  camera_fb_t *fb = esp_camera_fb_get();
   if (!fb) {
     Serial.println("Falha ao capturar imagem");
     return;
   }
-
-  String imageBase64 = base64::encode(fb->buf, fb->len);
-  client.send(imageBase64);
-  Serial.println("Imagem enviada via WebSocket");
-
+  Serial.println("Foto enviada");
+  client.sendBinary((const char*)fb->buf, fb->len);
   esp_camera_fb_return(fb);
 }
 
-void setup() {
-  Serial.begin(115200);
-  setupWiFi();
-  setupCamera();
-
-  client.onEvent([](WebsocketsEvent e, String data){
-    if (e == WebsocketsEvent::ConnectionOpened) {
-      Serial.println("Conectado ao servidor WebSocket!");
-    } else if (e == WebsocketsEvent::ConnectionClosed) {
-      Serial.println("Desconectado do WebSocket.");
-    } else if (e == WebsocketsEvent::GotPing) {
-      Serial.println("Ping recebido!");
-    }
-  });
-
-  client.onMessage([](WebsocketsMessage message){
-    Serial.print("Mensagem do servidor: ");
-    Serial.println(message.data());
-  });
-
-  client.connect(ws_server);
-}
-
 void loop() {
-  client.poll();  // necessário para manter a conexão viva
-
-  static unsigned long lastSent = 0;
-  if (millis() - lastSent > 5000) {
-    mandarFoto();
-    lastSent = millis();
+  if (client.available()) {
+    client.poll();
+    sendImageToServer();
   }
+  delay(500);
 }
-
