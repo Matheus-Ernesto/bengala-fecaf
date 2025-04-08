@@ -1,19 +1,18 @@
 #include "esp_camera.h"
 #include <WiFi.h>
-#include <WebSocketsClient.h>
-#include <ArduinoJson.h>
+#include <ArduinoWebsockets.h>
+#include "base64.h"  // esta vem com a IDE Arduino
+
+using namespace websockets;
 
 #define CAMERA_MODEL_AI_THINKER
 #include "camera_pins.h"
 
 const char* ssid = "CASA-2.4G";
 const char* password = "25122003";
-const char* host = "192.168.10.4";
-const uint16_t port = 8000;
-const char* wsPath = "/ws";
-const int timeDelay = 1000;
+const char* ws_server = "ws://192.168.10.4:8765";  // IP do seu PC com Python rodando
 
-WebSocketsClient webSocket;
+WebsocketsClient client;
 
 void setupWiFi() {
   WiFi.begin(ssid, password);
@@ -22,11 +21,11 @@ void setupWiFi() {
     delay(500);
     Serial.print(".");
   }
-  Serial.println("\nWiFi conectado");
+  Serial.println("\nWiFi conectado!");
 }
 
 void setupCamera() {
-  camera_config_t config;
+   camera_config_t config;
   config.ledc_channel = LEDC_CHANNEL_0;
   config.ledc_timer = LEDC_TIMER_0;
   config.pin_d0 = Y2_GPIO_NUM;
@@ -57,73 +56,52 @@ void setupCamera() {
     Serial.printf("Erro ao inicializar câmera: 0x%x", err);
     while (true) delay(100);
   }
-
-  sensor_t *s = esp_camera_sensor_get();
-  s->set_brightness(s, -2);
-  s->set_contrast(s, -2);
-  s->set_saturation(s, -2);
-  s->set_special_effect(s, 2);
 }
 
-void webSocketEvent(WStype_t type, uint8_t* payload, size_t length) {
-  switch (type) {
-    case WStype_CONNECTED:
-      Serial.println("[WS] Conectado ao servidor WebSocket");
-      break;
-    case WStype_DISCONNECTED:
-      Serial.println("[WS] Desconectado do WebSocket");
-      break;
-    case WStype_TEXT:
-      Serial.println("[WS] Mensagem recebida: " + String((char*)payload));
-      break;
-    case WStype_BIN:
-      Serial.println("[WS] Binário recebido (não tratado)");
-      break;
-    default:
-      break;
+void mandarFoto() {
+  camera_fb_t * fb = esp_camera_fb_get();
+  if (!fb) {
+    Serial.println("Falha ao capturar imagem");
+    return;
   }
-}
 
-void setupWebSocket() {
-  webSocket.begin(host, port, wsPath);
-  webSocket.onEvent(webSocketEvent);
-  webSocket.setReconnectInterval(5000);
+  String imageBase64 = base64::encode(fb->buf, fb->len);
+  client.send(imageBase64);
+  Serial.println("Imagem enviada via WebSocket");
+
+  esp_camera_fb_return(fb);
 }
 
 void setup() {
   Serial.begin(115200);
-  Serial.setDebugOutput(true);
-  Serial.println();
-
   setupWiFi();
   setupCamera();
-  setupWebSocket();
+
+  client.onEvent([](WebsocketsEvent e, String data){
+    if (e == WebsocketsEvent::ConnectionOpened) {
+      Serial.println("Conectado ao servidor WebSocket!");
+    } else if (e == WebsocketsEvent::ConnectionClosed) {
+      Serial.println("Desconectado do WebSocket.");
+    } else if (e == WebsocketsEvent::GotPing) {
+      Serial.println("Ping recebido!");
+    }
+  });
+
+  client.onMessage([](WebsocketsMessage message){
+    Serial.print("Mensagem do servidor: ");
+    Serial.println(message.data());
+  });
+
+  client.connect(ws_server);
 }
 
 void loop() {
-  webSocket.loop();
+  client.poll();  // necessário para manter a conexão viva
 
-  if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("[ERRO] Wi-Fi desconectado, tentando reconectar...");
-    setupWiFi();
-    return;
+  static unsigned long lastSent = 0;
+  if (millis() - lastSent > 5000) {
+    mandarFoto();
+    lastSent = millis();
   }
-
-  if (!webSocket.isConnected()) {
-    Serial.println("[ERRO] WebSocket desconectado, aguardando reconexão...");
-    delay(1000);
-    return;
-  }
-
-  camera_fb_t *fb = esp_camera_fb_get();
-  if (!fb) {
-    Serial.println("[ERRO] Falha ao capturar imagem");
-    return;
-  }
-
-  Serial.println("[INFO] Enviando imagem via WebSocket...");
-  webSocket.sendBIN(fb->buf, fb->len);
-  esp_camera_fb_return(fb);
-
-  delay(timeDelay);
 }
+
