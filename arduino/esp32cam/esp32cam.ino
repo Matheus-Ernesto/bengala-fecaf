@@ -1,26 +1,31 @@
 #include "esp_camera.h"
 #include <WiFi.h>
-#include <HTTPClient.h>
+#include <WebSocketsClient.h>
 #include <ArduinoJson.h>
 
 #define CAMERA_MODEL_AI_THINKER
 #include "camera_pins.h"
 
-// Configurações de rede
-//CONFIG HERE
-const char* ssid = "ESP32LAN";
-const char* password = "abcdefgh";
-const char* ipv4 = "192.168.212.154";
-const int timeDelay = 500;
-//CONFIG HERE END
+const char* ssid = "CASA-2.4G";
+const char* password = "25122003";
+const char* host = "192.168.10.4";
+const uint16_t port = 8000;
+const char* wsPath = "/ws";
+const int timeDelay = 1000;
 
-String serverUrl = "http://" + String(ipv4) + ":8000/process-image/";
+WebSocketsClient webSocket;
 
-void setup() {
-  Serial.begin(115200);
-  Serial.setDebugOutput(true);
-  Serial.println();
+void setupWiFi() {
+  WiFi.begin(ssid, password);
+  Serial.print("Conectando ao WiFi");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\nWiFi conectado");
+}
 
+void setupCamera() {
   camera_config_t config;
   config.ledc_channel = LEDC_CHANNEL_0;
   config.ledc_timer = LEDC_TIMER_0;
@@ -45,89 +50,80 @@ void setup() {
   config.frame_size = FRAMESIZE_VGA;
   config.jpeg_quality = 12;
   config.fb_count = 1;
-
-  if (config.pixel_format == PIXFORMAT_JPEG && psramFound()) {
-    config.jpeg_quality = 10;
-    config.fb_count = 2;
-  } else {
-    config.frame_size = FRAMESIZE_VGA;
-    config.fb_location = CAMERA_FB_IN_DRAM;
-  }
-
-  sensor_t *s = esp_camera_sensor_get();
-  if (s) {
-      s->set_brightness(s, -2);  // Brilho (-2 a 2, padrão 0)
-      s->set_contrast(s, -2);    // Contraste (-2 a 2, padrão 0)
-      s->set_saturation(s, -2);  // Saturação (-2 a 2, padrão 0)
-      s->set_special_effect(s, 2);
-  }
-
+  config.fb_location = CAMERA_FB_IN_PSRAM;
 
   esp_err_t err = esp_camera_init(&config);
   if (err != ESP_OK) {
-    Serial.printf("Camera init failed with error 0x%x", err);
-    return;
+    Serial.printf("Erro ao inicializar câmera: 0x%x", err);
+    while (true) delay(100);
   }
 
-  WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-  Serial.println("\nWiFi connected");
+  sensor_t *s = esp_camera_sensor_get();
+  s->set_brightness(s, -2);
+  s->set_contrast(s, -2);
+  s->set_saturation(s, -2);
+  s->set_special_effect(s, 2);
 }
 
-void sendImageToServer() {
-  camera_fb_t * fb = esp_camera_fb_get();
-  if (!fb) {
-    Serial.println("Falha ao capturar imagem");
-    return;
+void webSocketEvent(WStype_t type, uint8_t* payload, size_t length) {
+  switch (type) {
+    case WStype_CONNECTED:
+      Serial.println("[WS] Conectado ao servidor WebSocket");
+      break;
+    case WStype_DISCONNECTED:
+      Serial.println("[WS] Desconectado do WebSocket");
+      break;
+    case WStype_TEXT:
+      Serial.println("[WS] Mensagem recebida: " + String((char*)payload));
+      break;
+    case WStype_BIN:
+      Serial.println("[WS] Binário recebido (não tratado)");
+      break;
+    default:
+      break;
   }
+}
 
-  if (WiFi.status() == WL_CONNECTED) {
-    HTTPClient http;
-    WiFiClient client;
+void setupWebSocket() {
+  webSocket.begin(host, port, wsPath);
+  webSocket.onEvent(webSocketEvent);
+  webSocket.setReconnectInterval(5000);
+}
 
-    http.begin(client, serverUrl);
-    http.addHeader("Content-Type", "image/jpeg");
+void setup() {
+  Serial.begin(115200);
+  Serial.setDebugOutput(true);
+  Serial.println();
 
-    int httpResponseCode = http.POST(fb->buf, fb->len);
-    esp_camera_fb_return(fb);
-    Serial.print("Código de resposta HTTP: ");
-    Serial.println(httpResponseCode);
-
-    if (httpResponseCode > 0) {
-        String response = http.getString();
-        Serial.println("Resposta do servidor:");
-        Serial.println(response);
-
-        // Criar buffer JSON
-        StaticJsonDocument<200> doc;
-        DeserializationError error = deserializeJson(doc, response);
-
-        if (!error) {
-            float max_val = doc["max_val"];
-            int maxInt = static_cast<int>(max_val);
-            
-            Serial.print("Valor extraído: ");
-            Serial.println(maxInt);
-            if(maxInt >= 200) {
-              //Vibrar motor
-            }
-        } else {
-            Serial.println("Erro ao interpretar JSON");
-        }
-    } else {
-        Serial.println("Erro na requisição");
-    }
-    
-    http.end();
-  } else {
-    Serial.println("Wi-Fi não conectado");
-  }
+  setupWiFi();
+  setupCamera();
+  setupWebSocket();
 }
 
 void loop() {
-  sendImageToServer();
+  webSocket.loop();
+
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("[ERRO] Wi-Fi desconectado, tentando reconectar...");
+    setupWiFi();
+    return;
+  }
+
+  if (!webSocket.isConnected()) {
+    Serial.println("[ERRO] WebSocket desconectado, aguardando reconexão...");
+    delay(1000);
+    return;
+  }
+
+  camera_fb_t *fb = esp_camera_fb_get();
+  if (!fb) {
+    Serial.println("[ERRO] Falha ao capturar imagem");
+    return;
+  }
+
+  Serial.println("[INFO] Enviando imagem via WebSocket...");
+  webSocket.sendBIN(fb->buf, fb->len);
+  esp_camera_fb_return(fb);
+
   delay(timeDelay);
 }

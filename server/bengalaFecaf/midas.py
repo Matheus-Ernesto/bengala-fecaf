@@ -32,11 +32,11 @@ class Midas:
                 "bengalaFecaf/weights/"+self.modelo,
                 self.tipo_modelo,
                 False,
-                None,
+                64,
                 False)
         return None
     
     def avaliar(self, imagem):
         with ocultar_prints():
-            run.run_with_model(self._model, self.transform, self.net_w, self.net_h, imagem, "images/runs_midas", model_type=self.tipo_modelo, optimize=False, side=False, grayscale=True)
+            run.run_with_model(self._model, self.transform, self.net_w, self.net_h, imagem, "images/runs_midas", model_type=self.tipo_modelo, optimize=True, side=False, grayscale=True)
         return None

@@ -1,13 +1,14 @@
+
+# Importa servidor
 from bengalaFecaf.server import Server
+# Importa IA Yolo
 from bengalaFecaf.yolo import Yolo
+# Importa IA Midas
 from bengalaFecaf.midas import Midas
 
-yolo = Yolo()
-midas = Midas()
-
 server = Server()
-server.yolo = yolo
-server.midas = midas
+server.yolo = None
+server.midas = None
 server.verbose = False
 
 server.iniciar()
