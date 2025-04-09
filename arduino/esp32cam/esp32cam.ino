@@ -20,6 +20,9 @@ const uint16_t websockets_server_port = 8765;
 
 WebsocketsClient client;
 
+bool respostaRecebida = false;
+String respostaServidor = "";
+
 // Configurações
 void setup() {
   // Iniciar transmissão de logs com o computador (se conectado por cabo USB)
@@ -86,26 +89,43 @@ void setup() {
 
   // Callback para mensagens recebidas
   client.onMessage([](WebsocketsMessage message) {
+    respostaServidor = message.data();
+    respostaRecebida = true;
     Serial.print("Resposta: ");
-    Serial.println(message.data());
+    Serial.println(respostaServidor);
   });
 }
 
 // Repete infinitamente
 void loop() {
   if (client.available()) {
-    client.poll();
-    // Tira e envia a foto ao servidor se disponível a conexão.
+    client.poll(); // Processa eventos pendentes, inclusive mensagens
+
+    // Captura e envia a foto
     camera_fb_t *fb = esp_camera_fb_get();
     if (!fb) {
       Serial.println("Falha ao capturar imagem");
       return;
     }
+
     Serial.println("Foto enviada");
     client.sendBinary((const char*)fb->buf, fb->len);
-    // Limpa o buffer, removendo a foto da memória
     esp_camera_fb_return(fb);
+
+    // Espera a resposta do servidor antes de continuar
+    respostaRecebida = false;
+    unsigned long tempoLimite = millis() + 5000; // Espera no máximo 5 segundos
+    while (!respostaRecebida && millis() < tempoLimite) {
+      client.poll(); // Precisa disso aqui pra que o callback seja chamado
+      delay(10);     // Pequeno delay para evitar travar o loop
+    }
+
+    if (respostaRecebida) {
+      // Pode fazer algo com respostaServidor
+    } else {
+      Serial.println("Tempo de espera da resposta excedido.");
+    }
   }
-  // Essa parte pode ser reduzida de acordo com a velocidade do seu servidor e conexão.
-  delay(500);
+
+  delay(10); // Ajuste conforme necessário
 }

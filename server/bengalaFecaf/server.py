@@ -40,8 +40,6 @@ class Server:
             try:
                 # Loop para escutar mensagens (imagens) do cliente
                 async for message in websocket:
-                    print("Imagem recebida! Salvando...")
-
                     # Cria o diretório de imagens, se ainda não existir
                     output_dir = "images/photos"
                     os.makedirs(output_dir, exist_ok=True)
@@ -59,48 +57,44 @@ class Server:
                     print(f"##### Tempo entre requisições: {elapsed_time_ms:.2f} ms | FPS: {fps:.2f} #####")
 
                     # Caminhos para processamento das imagens
-                    IMAGE_PATH = "images/photos/output.jpg"
                     IMAGE_PATH_MIDAS = "images/photos/"
                     IMAGE_PATH_YOLO = "images/photos/output.jpg"
 
-                    if self.verbose:
-                        print("Imagem salva em:", IMAGE_PATH)
-
                     # Avalia com YOLO (detecção de objetos)
-                    if self.yolo:
-                        self.yolo.avaliar(IMAGE_PATH_YOLO)
+                    if self.yolo: self.yolo.avaliar(IMAGE_PATH_YOLO)
 
                     # Avalia com MiDaS (profundidade)
-                    if self.midas:
-                        self.midas.avaliar(IMAGE_PATH_MIDAS)
+                    if self.midas: self.midas.avaliar(IMAGE_PATH_MIDAS)
 
                     # Caminho da imagem de profundidade gerada pelo MiDaS
-                    image_path = f"images/runs_midas/output-{self.midas.tipo_modelo}.png"
-                    image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)  # Lê em tons de cinza
+                    if self.midas: 
+                        image_path = f"images/runs_midas/output-{self.midas.tipo_modelo}.png"
+                        image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)  # Lê em tons de cinza
+                        colored_output = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
+                        # Caminho final
+                        cv2.imwrite(f"images/runs_midas/output.png", colored_output)
+                        if image is None:
+                            print("Erro ao carregar a imagem.")
+                            # Aqui poderia-se enviar uma mensagem de erro ao cliente
+                            await websocket.send("false")
+                        else:
+                            # Corta as bordas da imagem para remover ruído
+                            height, width = image.shape
+                            crop_x = int(width * 0.2)
+                            crop_y = int(height * 0.2)
+                            cropped_image = image[crop_y:height - crop_y, crop_x:width - crop_x]
 
-                    if image is None:
-                        print("Erro ao carregar a imagem.")
-                        # Aqui poderia-se enviar uma mensagem de erro ao cliente
-                        # await websocket.send("false")
-                    else:
-                        # Corta as bordas da imagem para remover ruído
-                        height, width = image.shape
-                        crop_x = int(width * 0.2)
-                        crop_y = int(height * 0.2)
-                        cropped_image = image[crop_y:height - crop_y, crop_x:width - crop_x]
+                            # Encontra o pixel mais claro (mais próximo)
+                            min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(cropped_image)
 
-                        # Encontra o pixel mais claro (mais próximo)
-                        min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(cropped_image)
+                            if self.verbose: print(f"O pixel mais branco tem valor: {max_val} (escala de 0 a 255)")
 
-                        if self.verbose:
-                            print(f"O pixel mais branco tem valor: {max_val} (escala de 0 a 255)")
-
-                        # Se o pixel mais claro for acima de um limiar, ativa o motor
-                        ativar_motor = max_val >= 200
-                        await websocket.send("true" if ativar_motor else "false")
+                            # Se o pixel mais claro for acima de um limiar, ativa o motor
+                            ativar_motor = max_val >= 200
+                            await websocket.send("true" if ativar_motor else "false")
 
                     # Mensagem de confirmação para o cliente
-                    await websocket.send("Imagem recebida e salva com sucesso!")
+                    await websocket.send("false")
 
             except websockets.exceptions.ConnectionClosed as e:
                 print(f"Cliente desconectado: {e}")
