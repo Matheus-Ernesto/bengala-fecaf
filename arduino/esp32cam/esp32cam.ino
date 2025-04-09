@@ -5,14 +5,24 @@
 using namespace websockets;
 
 // Configurações de rede
+// MODIFICAR ESTA PARTE PARA SUA REDE
+
+// NOMDE DO SEU WIFI
 const char* ssid = "CASA-2.4G";
+// SUA SENHA DE WIFI
 const char* password = "25122003";
+// SEU IP, ONDE O SERVIDOR ESTA ABERTO
 const char* websockets_server_host = "192.168.10.4";
+// PORTA ESCOLHIDA PARA ABRIR O SERVIDOR
 const uint16_t websockets_server_port = 8765;
+
+// FIM Configurações de rede
 
 WebsocketsClient client;
 
+// Configurações
 void setup() {
+  // Iniciar transmissão de logs com o computador (se conectado por cabo USB)
   Serial.begin(115200);
   Serial.setDebugOutput(true);
   Serial.println();
@@ -39,9 +49,11 @@ void setup() {
   config.pin_reset = -1;
   config.xclk_freq_hz = 20000000;
   config.pixel_format = PIXFORMAT_JPEG;
-  config.frame_size = FRAMESIZE_VGA;
-  config.jpeg_quality = 12;
   config.fb_count = 1;
+  // Modificar o campo abaixo para alterar a resolução de imagem 
+  config.frame_size = FRAMESIZE_VGA;
+  // Modificar a qualidade de foto - 0 = 100%; 31 = 50%; 63 = 0% (a imagem fica bem borrada no 63, recomendado 12)
+  config.jpeg_quality = 12;
 
   // Inicialização do sensor e ajustes de imagem
   sensor_t *s = esp_camera_sensor_get();
@@ -74,26 +86,26 @@ void setup() {
 
   // Callback para mensagens recebidas
   client.onMessage([](WebsocketsMessage message) {
-    Serial.print("Ativar motor: ");
+    Serial.print("Resposta: ");
     Serial.println(message.data());
   });
 }
 
-void sendImageToServer() {
-  camera_fb_t *fb = esp_camera_fb_get();
-  if (!fb) {
-    Serial.println("Falha ao capturar imagem");
-    return;
-  }
-  Serial.println("Foto enviada");
-  client.sendBinary((const char*)fb->buf, fb->len);
-  esp_camera_fb_return(fb);
-}
-
+// Repete infinitamente
 void loop() {
   if (client.available()) {
     client.poll();
-    sendImageToServer();
+    // Tira e envia a foto ao servidor se disponível a conexão.
+    camera_fb_t *fb = esp_camera_fb_get();
+    if (!fb) {
+      Serial.println("Falha ao capturar imagem");
+      return;
+    }
+    Serial.println("Foto enviada");
+    client.sendBinary((const char*)fb->buf, fb->len);
+    // Limpa o buffer, removendo a foto da memória
+    esp_camera_fb_return(fb);
   }
+  // Essa parte pode ser reduzida de acordo com a velocidade do seu servidor e conexão.
   delay(500);
 }
